@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ImageBackground,
-    Linking,
-    ScrollView,
-    StyleSheet, Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  ImageBackground,
+  Linking,
+  ScrollView,
+  StyleSheet, Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { api, formatNumber } from '../lib/api';
 import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
@@ -98,9 +98,9 @@ const FeeManagementContent: React.FC = () => {
         )}
 
         {!loading && displayStudent && (
-          <>
-            {students && students.length > 1 && (
-              <>
+          <React.Fragment>
+            {students && students.length > 1 ? (
+              <View style={styles.studentPicker}>
                 <Text style={styles.pickHint}>Select a student:</Text>
                 {students.map((s) => (
                   <TouchableOpacity 
@@ -111,8 +111,8 @@ const FeeManagementContent: React.FC = () => {
                     <Text style={[styles.studentChipText, selectedStudent?.id === s.id && styles.studentChipTextActive]}>{s.name}</Text>
                   </TouchableOpacity>
                 ))}
-              </>
-            )}
+              </View>
+            ) : null}
             <View style={styles.feeCard}>
               <DetailRow label="Student:" value={displayStudent.name} />
               <DetailRow label="Father :" value={displayStudent.father_name || '-'} />
@@ -126,7 +126,7 @@ const FeeManagementContent: React.FC = () => {
             <TouchableOpacity style={styles.dialBtn} onPress={handleDial}>
               <Text style={styles.dialBtnText}>Dial to Parent 📞</Text>
             </TouchableOpacity>
-          </>
+          </React.Fragment>
         )}
 
         {!loading && !displayStudent && students === null && (
@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
   
   loadingWrap: { alignItems: 'center', paddingVertical: 30 },
   hint: { textAlign: 'center', color: '#6B7280', fontSize: normalize(14), marginTop: 20 },
+  studentPicker: { marginBottom: 15 },
   pickHint: { fontSize: normalize(14), color: '#374151', marginBottom: 10 },
   studentChip: { backgroundColor: '#E5E7EB', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, marginBottom: 8 },
   studentChipActive: { backgroundColor: '#2563EB' },
