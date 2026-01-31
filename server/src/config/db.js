@@ -1,33 +1,35 @@
-const { Pool } = require('pg');
+const Database = require('better-sqlite3');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  // Or use individual config if DATABASE_URL is not set
-  ...(process.env.DATABASE_URL ? {} : {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    database: process.env.DB_NAME || 'cambridge_kids_db',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-  }),
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+const dataDir = path.join(__dirname, '../../data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-pool.on('error', (err) => {
-  console.error('Unexpected database pool error:', err);
-});
+const dbPath = process.env.DB_PATH || path.join(dataDir, 'cambridge_kids.db');
+const db = new Database(dbPath);
 
-const query = (text, params) => pool.query(text, params);
+function toSqliteSql(sql) {
+  return sql.replace(/\$(\d+)/g, '?');
+}
+
+function query(sql, params = []) {
+  const sqliteSql = toSqliteSql(sql);
+  const stmt = db.prepare(sqliteSql);
+
+  let rows;
+  try {
+    rows = params.length ? stmt.all(...params) : stmt.all();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  return Promise.resolve({ rows: Array.isArray(rows) ? rows : (rows ? [rows] : []) });
+}
 
 const testConnection = async () => {
   try {
-    const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
-    client.release();
-    console.log('Database connected at:', result.rows[0].now);
+    db.prepare('SELECT 1').get();
+    console.log('Database connected (SQLite)');
     return true;
   } catch (err) {
     console.error('Database connection failed:', err.message);
@@ -35,4 +37,4 @@ const testConnection = async () => {
   }
 };
 
-module.exports = { pool, query, testConnection };
+module.exports = { db, query, testConnection };

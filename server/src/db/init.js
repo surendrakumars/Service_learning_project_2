@@ -1,61 +1,41 @@
-const { pool } = require('../config/db');
+const { db } = require('../config/db');
 require('dotenv').config();
 
-const initSchema = async () => {
-  const client = await pool.connect();
+const bcrypt = require('bcrypt');
 
-  try {
-    // Users/Admins table for login
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    name TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  )
+`);
 
-    // Students table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS students (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        grade VARCHAR(50),
-        father_name VARCHAR(255),
-        mother_name VARCHAR(255),
-        mobile_no VARCHAR(20),
-        teacher VARCHAR(255),
-        total_fees INTEGER DEFAULT 10000,
-        fees_paid INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS students (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    grade TEXT,
+    father_name TEXT,
+    mother_name TEXT,
+    mobile_no TEXT,
+    teacher TEXT,
+    total_fees INTEGER DEFAULT 10000,
+    fees_paid INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )
+`);
 
-    // Create index for faster student name search
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_students_name ON students(name)
-    `);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_students_name ON students(name)`);
 
-    // Insert default admin user (email: admin@cambridgekids.com, password: admin123)
-    const bcrypt = require('bcrypt');
-    const hash = await bcrypt.hash('admin123', 10);
-    await client.query(
-      `INSERT INTO users (email, password_hash, name)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (email) DO NOTHING`,
-      ['admin@cambridgekids.com', hash, 'Admin']
-    );
+const hash = bcrypt.hashSync('admin123', 10);
+const insertUser = db.prepare(`
+  INSERT OR IGNORE INTO users (email, password_hash, name) VALUES (?, ?, ?)
+`);
+insertUser.run('admin@cambridgekids.com', hash, 'Admin');
 
-    console.log('Database schema initialized successfully.');
-  } catch (err) {
-    console.error('Schema initialization failed:', err);
-    throw err;
-  } finally {
-    client.release();
-    await pool.end();
-  }
-};
-
-initSchema();
+console.log('Database schema initialized successfully (SQLite).');
+console.log('Default login: admin@cambridgekids.com / admin123');

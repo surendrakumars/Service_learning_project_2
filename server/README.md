@@ -1,11 +1,10 @@
 # Cambridge Kids Pre School - Backend API
 
-Node.js/Express backend with PostgreSQL for the Cambridge Kids Pre School mobile app.
+Node.js/Express backend with **SQLite** for the Cambridge Kids Pre School mobile app. No database installation required.
 
 ## Prerequisites
 
 - **Node.js** 18+
-- **PostgreSQL** 14+ (running locally or remote)
 
 ## Setup
 
@@ -16,48 +15,17 @@ cd server
 npm install
 ```
 
-### 2. Create PostgreSQL database
-
-```sql
-CREATE DATABASE cambridge_kids_db;
-```
-
-### 3. Configure environment
-
-Copy `.env.example` to `.env` and set your database URL:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-
-```
-PORT=3001
-DATABASE_URL=postgresql://postgres:your_password@localhost:5432/cambridge_kids_db
-```
-
-Or use individual variables:
-
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=cambridge_kids_db
-DB_USER=postgres
-DB_PASSWORD=your_password
-```
-
-### 4. Initialize database schema
+### 2. Initialize database (creates SQLite file automatically)
 
 ```bash
 npm run init-db
 ```
 
-This creates the `users` and `students` tables and a default admin user:
+This creates `data/cambridge_kids.db` and a default admin user:
 - **Email:** admin@cambridgekids.com
 - **Password:** admin123
 
-### 5. Start the server
+### 3. Start the server
 
 ```bash
 npm start
@@ -68,6 +36,8 @@ For development with auto-reload:
 ```bash
 npm run dev
 ```
+
+**Note:** No `.env` file needed for basic setup. The database file is stored in `server/data/`.
 
 ## API Endpoints
 

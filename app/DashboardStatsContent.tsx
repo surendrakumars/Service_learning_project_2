@@ -1,42 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { api, formatNumber } from '../lib/api';
-import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
+import React from 'react';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { horizontalScale, verticalScale, normalize } from './ResponsiveUtils';
 
 const DashboardStatsContent: React.FC = () => {
-  const [stats, setStats] = useState<{ studentsEnrolled: number; feesCollected: number; feesPending: number } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const result = await api.getDashboardStats();
-        if (result.ok) {
-          setStats(result.data);
-        } else {
-          setStats({ studentsEnrolled: 0, feesCollected: 0, feesPending: 0 });
-        }
-      } catch {
-        setStats({ studentsEnrolled: 0, feesCollected: 0, feesPending: 0 });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#2563EB" />
-      </View>
-    );
-  }
-
-  const studentsEnrolled = stats?.studentsEnrolled ?? 0;
-  const feesCollected = stats?.feesCollected ?? 0;
-  const feesPending = stats?.feesPending ?? 0;
-
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: verticalScale(50)}}>
       <View style={styles.header}>
@@ -52,7 +18,7 @@ const DashboardStatsContent: React.FC = () => {
         {/* Card 1: Students */}
         <View style={[styles.card, styles.alignLeft]}>
           <View style={[styles.cardHeader, { justifyContent: 'flex-start', gap: 15 }]}>
-            <Text style={styles.bigNumber}>{studentsEnrolled}</Text>
+            <Text style={styles.bigNumber}>98</Text>
             <Text style={styles.cardIcon}>👤</Text>
           </View>
           <Text style={styles.cardLabel}>Students enrolled</Text>
@@ -62,7 +28,7 @@ const DashboardStatsContent: React.FC = () => {
         <View style={[styles.card, styles.alignRight]}>
           <View style={[styles.cardHeader, { justifyContent: 'flex-start', gap: 10 }]}>
              <Text style={styles.cardIcon}>₹↑</Text>
-            <Text style={styles.bigNumber}>{formatNumber(feesCollected)}</Text>
+            <Text style={styles.bigNumber}>50,000</Text>
           </View>
           <Text style={styles.cardLabel}>Fees Collected</Text>
         </View>
@@ -71,7 +37,7 @@ const DashboardStatsContent: React.FC = () => {
         <View style={[styles.card, styles.alignLeft]}>
           <View style={[styles.cardHeader, { justifyContent: 'flex-start', gap: 10 }]}>
              <Text style={styles.cardIcon}>₹↓</Text>
-            <Text style={styles.bigNumber}>{formatNumber(feesPending)}</Text>
+            <Text style={styles.bigNumber}>70,000</Text>
           </View>
           <Text style={styles.cardLabel}>Fee Pending</Text>
         </View>

@@ -1,125 +1,34 @@
 import React, { useState } from 'react';
 import { 
-  StyleSheet, Text, View, TextInput, ScrollView, ImageBackground, TouchableOpacity, Alert, ActivityIndicator
+  StyleSheet, Text, View, TextInput, ScrollView, ImageBackground, TouchableOpacity, Alert
 } from 'react-native';
 import { horizontalScale, verticalScale, normalize } from './ResponsiveUtils';
-import { api } from '../lib/api';
 
 type Mode = 'ADD' | 'UPDATE' | 'DELETE';
 
-const FIELD_MAP: Record<string, string> = {
-  grade: 'grade',
-  'mobile no': 'mobile_no',
-  mobile_no: 'mobile_no',
-  fees: 'fees_paid',
-  fees_paid: 'fees_paid',
-  father: 'father_name',
-  father_name: 'father_name',
-  mother: 'mother_name',
-  mother_name: 'mother_name',
-  name: 'name',
-  teacher: 'teacher',
-};
-
 const StudentManagementContent: React.FC = () => {
   const [mode, setMode] = useState<Mode>('ADD');
-  const [loading, setLoading] = useState(false);
-  // ADD fields
-  const [addName, setAddName] = useState('');
-  const [addGrade, setAddGrade] = useState('');
-  const [addFather, setAddFather] = useState('');
-  const [addMother, setAddMother] = useState('');
-  const [addMobile, setAddMobile] = useState('');
-  const [addFeesPaid, setAddFeesPaid] = useState('');
-  // UPDATE fields
-  const [updateName, setUpdateName] = useState('');
-  const [updateField, setUpdateField] = useState('');
-  const [updateValue, setUpdateValue] = useState('');
-  // DELETE field
-  const [deleteName, setDeleteName] = useState('');
 
-  const resetForm = () => {
-    setAddName(''); setAddGrade(''); setAddFather(''); setAddMother(''); setAddMobile(''); setAddFeesPaid('');
-    setUpdateName(''); setUpdateField(''); setUpdateValue('');
-    setDeleteName('');
-  };
-
-  const handleConfirm = async () => {
+  // Logic to handle different confirm actions
+  const handleConfirm = () => {
     if (mode === 'ADD') {
-      if (!addName.trim()) {
-        Alert.alert('Error', 'Student name is required');
-        return;
-      }
-      setLoading(true);
-      const result = await api.addStudent({
-        name: addName.trim(),
-        grade: addGrade.trim() || undefined,
-        father_name: addFather.trim() || undefined,
-        mother_name: addMother.trim() || undefined,
-        mobile_no: addMobile.trim() || undefined,
-        fees_paid: addFeesPaid ? parseInt(addFeesPaid, 10) : 0,
-      });
-      setLoading(false);
-      if (result.ok) {
-        Alert.alert('Success', 'Student Added Successfully');
-        resetForm();
-      } else {
-        Alert.alert('Error', result.error);
-      }
-    } else if (mode === 'UPDATE') {
-      if (!updateName.trim() || !updateField.trim() || !updateValue.trim()) {
-        Alert.alert('Error', 'Please fill all fields');
-        return;
-      }
-      const apiField = FIELD_MAP[updateField.trim().toLowerCase().replace(/\s+/g, '_')] || FIELD_MAP[updateField.trim().toLowerCase()];
-      if (!apiField) {
-        Alert.alert('Error', 'Invalid field. Use: Grade, Mobile No, Fees, Father, Mother, Name, Teacher');
-        return;
-      }
-      setLoading(true);
-      const searchResult = await api.getStudents(updateName.trim());
-      setLoading(false);
-      if (!searchResult.ok || searchResult.data.length === 0) {
-        Alert.alert('Error', 'Student not found');
-        return;
-      }
-      const student = searchResult.data[0];
-      const updateData: Record<string, string | number> = {};
-      updateData[apiField] = apiField === 'fees_paid' ? parseInt(updateValue, 10) : updateValue;
-      setLoading(true);
-      const updateResult = await api.updateStudent(student.id, updateData as any);
-      setLoading(false);
-      if (updateResult.ok) {
-        Alert.alert('Success', 'Student Details Updated');
-        resetForm();
-      } else {
-        Alert.alert('Error', updateResult.error);
-      }
-    } else if (mode === 'DELETE') {
-      if (!deleteName.trim()) {
-        Alert.alert('Error', 'Student name is required');
-        return;
-      }
+      Alert.alert("Success", "Student Added Successfully");
+    } 
+    else if (mode === 'UPDATE') {
+      Alert.alert("Success", "Student Details Updated");
+    } 
+    else if (mode === 'DELETE') {
+      // Reconfirmation Dialog for Delete
       Alert.alert(
-        'Confirm Delete',
-        'The information will be permanently deleted',
+        "Confirm Delete",
+        "The information will be permanently deleted",
         [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              setLoading(true);
-              const result = await api.deleteStudentByName(deleteName.trim());
-              setLoading(false);
-              if (result.ok) {
-                Alert.alert('Deleted', 'Student removed from database');
-                resetForm();
-              } else {
-                Alert.alert('Error', result.error);
-              }
-            },
-          },
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Delete", 
+            style: "destructive", 
+            onPress: () => Alert.alert("Deleted", "Student removed from database") 
+          }
         ]
       );
     }
@@ -130,20 +39,20 @@ const StudentManagementContent: React.FC = () => {
       case 'ADD':
         return (
           <>
-            <InputGroup label="Name" placeholder="Enter Student Name" value={addName} onChangeText={setAddName} />
-            <InputGroup label="Grade" placeholder="Enter Grade" value={addGrade} onChangeText={setAddGrade} />
-            <InputGroup label="Father's Name" placeholder="Enter Father's Name" value={addFather} onChangeText={setAddFather} />
-            <InputGroup label="Mother Name" placeholder="Enter Mother Name" value={addMother} onChangeText={setAddMother} />
-            <InputGroup label="Mobile No" placeholder="Enter 10 digit number" keyboardType="phone-pad" value={addMobile} onChangeText={setAddMobile} />
-            <InputGroup label="Fees Paid" placeholder="Enter amount" keyboardType="numeric" value={addFeesPaid} onChangeText={setAddFeesPaid} />
+            <InputGroup label="Name" placeholder="Enter Student Name" />
+            <InputGroup label="Grade" placeholder="Enter Grade" />
+            <InputGroup label="Father's Name" placeholder="Enter Father's Name" />
+            <InputGroup label="Mother Name" placeholder="Enter Mother Name" />
+            <InputGroup label="Mobile No" placeholder="Enter 10 digit number" keyboardType="phone-pad" />
+            <InputGroup label="Fees Paid" placeholder="Enter amount" keyboardType="numeric" />
           </>
         );
       case 'UPDATE':
         return (
           <>
-            <InputGroup label="Student Name" placeholder="Enter name of student to update" value={updateName} onChangeText={setUpdateName} />
-            <InputGroup label="Field to be updated" placeholder="e.g. Grade, Mobile No, Fees" value={updateField} onChangeText={setUpdateField} />
-            <InputGroup label="New Content" placeholder="Enter the new value" value={updateValue} onChangeText={setUpdateValue} />
+            <InputGroup label="Student Name" placeholder="Enter name of student to update" />
+            <InputGroup label="Field to be updated" placeholder="e.g. Grade, Mobile No, Fees" />
+            <InputGroup label="New Content" placeholder="Enter the new value" />
           </>
         );
       case 'DELETE':
@@ -154,7 +63,7 @@ const StudentManagementContent: React.FC = () => {
                 Enter the name of the student you wish to remove.
               </Text>
             </View>
-            <InputGroup label="Student Name" placeholder="Enter Student Name to delete" value={deleteName} onChangeText={setDeleteName} />
+            <InputGroup label="Student Name" placeholder="Enter Student Name to delete" />
           </>
         );
       default:
@@ -173,13 +82,13 @@ const StudentManagementContent: React.FC = () => {
 
         {/* Mode Selection Buttons */}
         <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.actionBtn, styles.btnAdd, mode === 'ADD' ? styles.activeBtn : styles.inactiveBtn]} onPress={() => { setMode('ADD'); resetForm(); }}>
+          <TouchableOpacity style={[styles.actionBtn, styles.btnAdd, mode === 'ADD' ? styles.activeBtn : styles.inactiveBtn]} onPress={() => setMode('ADD')}>
             <Text style={styles.btnText}>Add +</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.btnUpdate, mode === 'UPDATE' ? styles.activeBtn : styles.inactiveBtn]} onPress={() => { setMode('UPDATE'); resetForm(); }}>
+          <TouchableOpacity style={[styles.actionBtn, styles.btnUpdate, mode === 'UPDATE' ? styles.activeBtn : styles.inactiveBtn]} onPress={() => setMode('UPDATE')}>
             <Text style={styles.btnText}>Update ⌄</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.btnDel, mode === 'DELETE' ? styles.activeBtn : styles.inactiveBtn]} onPress={() => { setMode('DELETE'); resetForm(); }}>
+          <TouchableOpacity style={[styles.actionBtn, styles.btnDel, mode === 'DELETE' ? styles.activeBtn : styles.inactiveBtn]} onPress={() => setMode('DELETE')}>
             <Text style={styles.btnText}>Del -</Text>
           </TouchableOpacity>
         </View>
@@ -195,13 +104,10 @@ const StudentManagementContent: React.FC = () => {
         <TouchableOpacity 
           style={[styles.confirmBtn, mode === 'DELETE' ? { backgroundColor: '#EF4444', borderColor: '#FECACA' } : {}]} 
           onPress={handleConfirm}
-          disabled={loading}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : (
-            <Text style={styles.confirmBtnText}>
-              {mode === 'ADD' ? 'Confirm Add ➤' : mode === 'UPDATE' ? 'Confirm Update ↻' : 'Confirm Delete 🗑'}
-            </Text>
-          )}
+          <Text style={styles.confirmBtnText}>
+            {mode === 'ADD' ? 'Confirm Add ➤' : mode === 'UPDATE' ? 'Confirm Update ↻' : 'Confirm Delete 🗑'}
+          </Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -209,10 +115,10 @@ const StudentManagementContent: React.FC = () => {
   );
 };
 
-const InputGroup = ({ label, placeholder, keyboardType, value, onChangeText }: { label: string; placeholder: string; keyboardType?: any; value: string; onChangeText: (t: string) => void }) => (
+const InputGroup = ({ label, placeholder, keyboardType }: any) => (
   <View style={styles.inputGroup}>
     <Text style={styles.label}>{label}</Text>
-    <TextInput style={styles.input} placeholder={placeholder} placeholderTextColor="#9CA3AF" keyboardType={keyboardType || 'default'} value={value} onChangeText={onChangeText} />
+    <TextInput style={styles.input} placeholder={placeholder} placeholderTextColor="#9CA3AF" keyboardType={keyboardType || 'default'} />
   </View>
 );
 

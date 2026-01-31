@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView, Platform,
   SafeAreaView,
   StyleSheet, Text,
   TextInput, TouchableOpacity,
   View
 } from 'react-native';
-import { api } from '../lib/api';
 import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
 
 interface LoginScreenProps {
@@ -17,29 +14,6 @@ interface LoginScreenProps {
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      Alert.alert('Error', 'Please enter email and password');
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await api.login(email.trim(), password);
-      if (result.ok) {
-        onLogin();
-      } else {
-        Alert.alert('Login Failed', result.error);
-      }
-    } catch {
-      Alert.alert('Login Failed', 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -52,21 +26,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             
             <View style={styles.inputWrapper}>
               <Text style={styles.label}>Email Address</Text>
-              <TextInput style={styles.inputField} placeholder="Enter Your Email" placeholderTextColor="#9CA3AF" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} editable={!loading} />
+              <TextInput style={styles.inputField} placeholder="Enter Your Email" placeholderTextColor="#9CA3AF" keyboardType="email-address" autoCapitalize="none" />
             </View>
 
             <View style={styles.inputWrapper}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.passwordContainer}>
-                <TextInput style={styles.passwordInput} placeholder="Enter Your Password" placeholderTextColor="#9CA3AF" secureTextEntry={!passwordVisible} value={password} onChangeText={setPassword} editable={!loading} />
+                <TextInput style={styles.passwordInput} placeholder="Enter Your Password" placeholderTextColor="#9CA3AF" secureTextEntry={!passwordVisible} />
                 <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
                    <Text style={{fontSize: normalize(20)}}>{passwordVisible ? "👁️" : "👁️‍🗨️"}</Text> 
                 </TouchableOpacity>
               </View>
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log In</Text>}
+            <TouchableOpacity style={styles.button} onPress={onLogin}>
+              <Text style={styles.buttonText}>Log In</Text>
             </TouchableOpacity>
 
             <TouchableOpacity>
