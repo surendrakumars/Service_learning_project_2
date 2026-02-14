@@ -1,10 +1,12 @@
 const express = require('express');
 const { query } = require('../config/db');
 
+const { protect } = require('../middleware/auth.middleware');
+
 const router = express.Router();
 
 // GET /api/students - List all students (optional: ?search=name)
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const { search } = req.query;
     let result;
@@ -28,7 +30,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/students/:id - Get single student
-router.get('/:id', async (req, res) => {
+router.get('/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await query('SELECT * FROM students WHERE id = $1', [id]);
@@ -75,7 +77,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/students/:id - Update student (partial update)
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, grade, father_name, mother_name, mobile_no, fees_paid, teacher } = req.body;
@@ -154,7 +156,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // DELETE /api/students/by-name/:name - Delete by student name
-router.delete('/by-name/:name', async (req, res) => {
+router.delete('/by-name/:name', protect, async (req, res) => {
   try {
     const { name } = req.params;
     const result = await query(

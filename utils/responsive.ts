@@ -21,6 +21,3 @@ export const normalize = (size: number) => {
 }
 
 export { height, horizontalScale, moderateScale, verticalScale, width };
-
-// Dummy default export to prevent Expo Router from treating this as a route
-export default null;

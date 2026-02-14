@@ -3,10 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const { testConnection } = require('./config/db');
 
-const authRoutes = require('./routes/auth');
-const studentsRoutes = require('./routes/students');
-const dashboardRoutes = require('./routes/dashboard');
-const feesRoutes = require('./routes/fees');
+const authRoutes = require('./routes/auth.routes');
+const studentsRoutes = require('./routes/student.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
+const feesRoutes = require('./routes/fee.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,7 +42,7 @@ const startServer = async () => {
   const dbOk = await testConnection();
   if (!dbOk) {
     console.error('Cannot start server: database connection failed.');
-    console.error('Make sure PostgreSQL is running and DATABASE_URL (or DB_* vars) are set in .env');
+    console.error('Make sure MongoDB is running and MONGO_URI is set in .env');
     process.exit(1);
   }
 

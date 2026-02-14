@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DashboardStatsContent from './DashboardStatsContent';
+import FeeManagementContent from './FeeManagementContent';
+import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
 import StudentInfoContent from './StudentInfoContent';
 import StudentManagementContent from './StudentManagementContent';
-import FeeManagementContent from './FeeManagementContent';
-import { horizontalScale, verticalScale, normalize } from './ResponsiveUtils';
 
 interface DashboardProps {
   onLogout: () => void;
+  userRole: 'admin' | 'staff';
 }
 
-const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<string>('Students'); 
+const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout, userRole }) => {
+  const [activeTab, setActiveTab] = useState<string>('Dashboard');
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+  const handleSelectStudent = (studentId: string) => {
+    setSelectedStudentId(studentId);
+    setActiveTab('Profile'); // Switch to Profile tab when a student is selected
+  }; 
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,12 +34,12 @@ const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout }) => {
             <View style={styles.logoInner} />
           </View>
           {/* Added "Admin" Text Here */}
-          <Text style={styles.adminLabel}>Admin</Text>
+          <Text style={styles.adminLabel}>{userRole === 'admin' ? 'Admin' : 'Staff'}</Text>
         </TouchableOpacity>
 
         {/* NAVIGATION ITEMS */}
         <View style={styles.navGroup}>
-          <SidebarItem icon="📊" label="Dashboard" isActive={activeTab === 'Dashboard'} onPress={() => setActiveTab('Dashboard')} />
+          <SidebarItem icon="📊" label="Dashboard" isActive={activeTab === 'Dashboard'} onPress={() => { setActiveTab('Dashboard'); setRefreshTrigger(prev => prev + 1); }} />
           <SidebarItem icon="👥" label="Students" isActive={activeTab === 'Students'} onPress={() => setActiveTab('Students')} />
           <SidebarItem icon="🏛️" label="Fees" isActive={activeTab === 'Fees'} onPress={() => setActiveTab('Fees')} />
           <SidebarItem icon="👤" label="Profile" isActive={activeTab === 'Profile'} onPress={() => setActiveTab('Profile')} />
@@ -40,10 +48,12 @@ const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout }) => {
 
       {/* MAIN CONTENT AREA */}
       <View style={styles.contentArea}>
-        {activeTab === 'Dashboard' && <DashboardStatsContent />}
-        {activeTab === 'Students' && <StudentManagementContent />}
-        {activeTab === 'Fees' && <FeeManagementContent />}
-        {activeTab === 'Profile' && <StudentInfoContent />}
+        <View style={styles.tabContent}>
+          {activeTab === 'Dashboard' && <DashboardStatsContent refreshTrigger={refreshTrigger} />}
+          {activeTab === 'Students' && <StudentManagementContent onSelectStudent={handleSelectStudent} userRole={userRole} />}
+          {activeTab === 'Fees' && <FeeManagementContent />}
+          {activeTab === 'Profile' && <StudentInfoContent studentId={selectedStudentId} />}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -58,7 +68,8 @@ const SidebarItem = ({ icon, label, isActive, onPress }: any) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', backgroundColor: '#FFFFFF' },
-  contentArea: { flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 0, paddingTop: 0 }, 
+  contentArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  tabContent: { flex: 1 }, 
   
   sidebar: { width: horizontalScale(90), backgroundColor: '#2563EB', alignItems: 'center', paddingVertical: verticalScale(40) },
   

@@ -1,79 +1,195 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
-import { horizontalScale, verticalScale, normalize } from './ResponsiveUtils';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { api, isAuthErrorMessage } from '../lib/api';
+import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
 
-const DashboardStatsContent: React.FC = () => {
+const formatNumber = (value: number) => {
+  return value.toLocaleString('en-IN');
+};
+
+interface DashboardStatsContentProps {
+  refreshTrigger?: number;
+}
+
+const DashboardStatsContent: React.FC<DashboardStatsContentProps> = ({ refreshTrigger }) => {
+  const [totalStudents, setTotalStudents] = useState<number | null>(null);
+  const [totalFeesCollected, setTotalFeesCollected] = useState<number | null>(null);
+  const [monthFeesCollected, setMonthFeesCollected] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboardStats = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.getDashboardStats();
+      if (response?.success && response.data) {
+        setTotalStudents(response.data.totalStudents);
+        setTotalFeesCollected(response.data.totalFeesCollected);
+        setMonthFeesCollected(response.data.monthFeesCollected);
+      } else {
+        const errMsg = response?.error || 'Failed to fetch dashboard statistics.';
+        if (isAuthErrorMessage(errMsg)) {
+          return;
+        }
+        setError(errMsg);
+        Alert.alert('Error', errMsg);
+      }
+    } catch (err) {
+      setError('Network error: Could not connect to the backend.');
+      Alert.alert(
+        'Network Error',
+        'Could not connect to the backend. Please check your internet connection.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, [fetchDashboardStats]);
+
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      fetchDashboardStats();
+    }
+  }, [refreshTrigger, fetchDashboardStats]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text style={styles.loadingText}>Loading dashboard</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: verticalScale(50)}}>
+    <ScrollView contentContainerStyle={{ paddingBottom: verticalScale(50) }}>
       <View style={styles.header}>
-        <Text style={styles.schoolName}>Cambridge Kids Pre School</Text>
-        <View style={styles.welcomeRow}>
-          <Text style={styles.welcome}>Hello Admin</Text>
-          <Text style={{fontSize: normalize(20)}}>👋</Text>
-        </View>
-        <Text style={styles.title}>DashBoard</Text>
+        <Text style={styles.schoolName}>Cambridge Little Kids</Text>
+        <Text style={styles.title}>Dashboard</Text>
       </View>
 
       <View style={styles.cardsLayout}>
-        {/* Card 1: Students */}
         <View style={[styles.card, styles.alignLeft]}>
-          <View style={[styles.cardHeader, { justifyContent: 'flex-start', gap: 15 }]}>
-            <Text style={styles.bigNumber}>98</Text>
-            <Text style={styles.cardIcon}>👤</Text>
-          </View>
+          <Text style={styles.bigNumber}>
+            {totalStudents !== null ? formatNumber(totalStudents) : '--'}
+          </Text>
           <Text style={styles.cardLabel}>Students enrolled</Text>
         </View>
 
-        {/* Card 2: Fees Collected */}
         <View style={[styles.card, styles.alignRight]}>
-          <View style={[styles.cardHeader, { justifyContent: 'flex-start', gap: 10 }]}>
-             <Text style={styles.cardIcon}>₹↑</Text>
-            <Text style={styles.bigNumber}>50,000</Text>
-          </View>
-          <Text style={styles.cardLabel}>Fees Collected</Text>
-        </View>
-
-        {/* Card 3: Fee Pending */}
-        <View style={[styles.card, styles.alignLeft]}>
-          <View style={[styles.cardHeader, { justifyContent: 'flex-start', gap: 10 }]}>
-             <Text style={styles.cardIcon}>₹↓</Text>
-            <Text style={styles.bigNumber}>70,000</Text>
-          </View>
-          <Text style={styles.cardLabel}>Fee Pending</Text>
+          <Text style={styles.bigNumber}>
+            {totalFeesCollected !== null ? formatNumber(totalFeesCollected) : '--'}
+          </Text>
+          <Text style={styles.cardLabel}>Fees collected</Text>
         </View>
       </View>
 
-      <View style={styles.decorArea}>
-          <View style={styles.bigGreenCircle}><View style={styles.centerBlueCircle} /></View>
-          <View style={styles.floatingBlueDot} />
-          <View style={styles.floatingGreenDot} />
+      <View style={styles.graphContainer}>
+        <Text style={styles.graphTitle}>Fees Collected This Month</Text>
+        <View style={styles.graphTrack}>
+          <View
+            style={[
+              styles.graphBar,
+              {
+                width: `${Math.max(
+                  8,
+                  Math.min(
+                    100,
+                    totalFeesCollected && totalFeesCollected > 0
+                      ? ((monthFeesCollected ?? 0) / totalFeesCollected) * 100
+                      : 0
+                  )
+                )}%`,
+              },
+            ]}
+          />
+        </View>
+        <Text style={styles.graphValue}>
+          Rs {monthFeesCollected !== null ? formatNumber(monthFeesCollected) : '--'}
+        </Text>
       </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  header: { alignItems: 'center', marginBottom: verticalScale(20), marginTop: verticalScale(40) },
-  schoolName: { fontSize: normalize(15), color: '#2563EB', fontWeight: 'bold', marginBottom: 5 },
-  welcomeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5, gap: 8 },
-  welcome: { fontSize: normalize(18), fontWeight: 'bold', color: '#111827' },
-  title: { fontSize: normalize(32), color: '#34D399', fontWeight: '400' },
-  
-  cardsLayout: { width: '100%', paddingHorizontal: horizontalScale(15) },
-  card: { backgroundColor: '#4ADE80', borderRadius: 15, paddingVertical: verticalScale(15), paddingHorizontal: horizontalScale(20), width: '68%', marginBottom: verticalScale(20), elevation: 3 },
+  header: { alignItems: 'center', marginVertical: verticalScale(30) },
+  schoolName: { fontSize: normalize(15), color: '#2563EB', fontWeight: 'bold' },
+  title: { fontSize: normalize(32), color: '#34D399' },
+
+  cardsLayout: { paddingHorizontal: horizontalScale(15) },
+  card: {
+    backgroundColor: '#4ADE80',
+    borderRadius: 15,
+    padding: verticalScale(20),
+    width: '70%',
+    marginBottom: verticalScale(20),
+  },
   alignLeft: { alignSelf: 'flex-start' },
   alignRight: { alignSelf: 'flex-end' },
-  
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  bigNumber: { fontSize: normalize(24), fontWeight: 'bold', color: '#111827' },
-  cardIcon: { fontSize: normalize(22), color: '#111827' },
-  cardLabel: { fontSize: normalize(13), color: '#1F2937', opacity: 0.8 },
-  
-  decorArea: { height: verticalScale(250), width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative', marginTop: 10 },
-  bigGreenCircle: { width: horizontalScale(160), height: horizontalScale(160), borderRadius: horizontalScale(80), backgroundColor: '#4ADE80', justifyContent: 'center', alignItems: 'center', position: 'absolute', top: verticalScale(20) },
-  centerBlueCircle: { width: horizontalScale(90), height: horizontalScale(90), borderRadius: horizontalScale(45), backgroundColor: '#2563EB' },
-  floatingBlueDot: { position: 'absolute', top: verticalScale(50), right: horizontalScale(30), width: horizontalScale(40), height: horizontalScale(40), borderRadius: horizontalScale(20), backgroundColor: '#2563EB' },
-  floatingGreenDot: { position: 'absolute', bottom: verticalScale(20), right: horizontalScale(10), width: horizontalScale(50), height: horizontalScale(50), borderRadius: horizontalScale(25), backgroundColor: '#4ADE80' },
+
+  bigNumber: { fontSize: normalize(24), fontWeight: 'bold' },
+  cardLabel: { fontSize: normalize(13), color: '#1F2937' },
+
+  graphContainer: {
+    marginTop: verticalScale(15),
+    marginHorizontal: horizontalScale(15),
+    backgroundColor: '#E0F2FE',
+    borderRadius: 15,
+    paddingVertical: verticalScale(18),
+    paddingHorizontal: horizontalScale(16),
+    borderWidth: 2,
+    borderColor: '#2563EB',
+  },
+  graphTitle: {
+    fontSize: normalize(15),
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: verticalScale(10),
+  },
+  graphTrack: {
+    width: '100%',
+    height: verticalScale(20),
+    backgroundColor: '#BFDBFE',
+    borderRadius: 99,
+    overflow: 'hidden',
+  },
+  graphBar: {
+    height: '100%',
+    backgroundColor: '#2563EB',
+    borderRadius: 99,
+  },
+  graphValue: {
+    marginTop: verticalScale(10),
+    fontSize: normalize(14),
+    fontWeight: '700',
+    color: '#111827',
+  },
+
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: verticalScale(10), fontSize: normalize(16) },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { fontSize: normalize(16), color: 'red' },
 });
 
 export default DashboardStatsContent;
+

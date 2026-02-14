@@ -1,10 +1,12 @@
 const express = require('express');
 const { query } = require('../config/db');
 
+const { protect } = require('../middleware/auth.middleware');
+
 const router = express.Router();
 
 // GET /api/dashboard/stats - Dashboard statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', protect, async (req, res) => {
   try {
     const [studentsResult, feesResult] = await Promise.all([
       query('SELECT COUNT(*) as count FROM students'),

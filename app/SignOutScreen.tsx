@@ -12,7 +12,7 @@ const SignOutScreen: React.FC<SignOutScreenProps> = ({ onSignOut }) => {
       <View style={styles.container}>
         
         {/* Title */}
-        <Text style={styles.title}>Cambridge Kids Pre School</Text>
+        <Text style={styles.title}>Cambridge Little Kids</Text>
 
         {/* Sign Out Button */}
         <TouchableOpacity style={styles.button} onPress={onSignOut}>

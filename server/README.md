@@ -1,6 +1,6 @@
-# Cambridge Kids Pre School - Backend API
+# Cambridge Little Kids - Backend API
 
-Node.js/Express backend with **SQLite** for the Cambridge Kids Pre School mobile app. No database installation required.
+Node.js/Express backend with **SQLite** for the Cambridge Little Kids mobile app. No database installation required.
 
 ## Prerequisites
 
@@ -62,3 +62,4 @@ Set the API base URL in your Expo app (e.g. in a config file):
 - **Android emulator:** `http://10.0.2.2:3001`
 - **iOS simulator:** `http://localhost:3001`
 - **Physical device:** `http://YOUR_COMPUTER_IP:3001`
+

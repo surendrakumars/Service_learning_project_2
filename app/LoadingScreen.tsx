@@ -14,7 +14,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ onFinish }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <Text style={styles.title}>Cambridge Kids Pre School</Text>
+      <Text style={styles.title}>Cambridge Little Kids</Text>
       <View style={styles.logoCircle} />
       <ActivityIndicator size="large" color="#000000" style={styles.loader} />
     </View>

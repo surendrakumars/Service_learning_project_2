@@ -1,40 +1,31 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
-const dataDir = path.join(__dirname, '../../data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+const MONGO_URI = process.env.MONGO_URI;
+const db = mongoose.connection;
 
-const dbPath = process.env.DB_PATH || path.join(dataDir, 'cambridge_kids.db');
-const db = new Database(dbPath);
-
-function toSqliteSql(sql) {
-  return sql.replace(/\$(\d+)/g, '?');
-}
-
-function query(sql, params = []) {
-  const sqliteSql = toSqliteSql(sql);
-  const stmt = db.prepare(sqliteSql);
-
-  let rows;
-  try {
-    rows = params.length ? stmt.all(...params) : stmt.all();
-  } catch (err) {
-    return Promise.reject(err);
-  }
-  return Promise.resolve({ rows: Array.isArray(rows) ? rows : (rows ? [rows] : []) });
-}
-
-const testConnection = async () => {
-  try {
-    db.prepare('SELECT 1').get();
-    console.log('Database connected (SQLite)');
-    return true;
-  } catch (err) {
-    console.error('Database connection failed:', err.message);
+async function testConnection() {
+  if (!MONGO_URI) {
+    console.error('MONGO_URI is not set in environment');
     return false;
   }
-};
 
-module.exports = { db, query, testConnection };
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log('Database connected (MongoDB)');
+    return true;
+  } catch (err) {
+    console.error('Database connection failed:', err.message || err);
+    return false;
+  }
+}
+
+db.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+db.once('open', () => {
+  console.log('MongoDB connection open');
+});
+
+module.exports = { db, testConnection };

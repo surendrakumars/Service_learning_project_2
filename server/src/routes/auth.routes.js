@@ -1,45 +1,87 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { query } = require('../config/db');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const router = express.Router();
 
-// POST /api/auth/login
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password_hash: { type: String, required: true },
+  role: { type: String, enum: ['admin', 'teacher', 'student'], default: 'student' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+UserSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password_hash);
+};
+
+const User = mongoose.models && mongoose.models.User
+  ? mongoose.models.User
+  : mongoose.model('User', UserSchema);
+
 router.post('/login', async (req, res) => {
   try {
+    console.log('LOGIN HIT', req.body);
+
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email or password',
+      });
     }
 
-    const result = await query(
-      'SELECT id, email, password_hash, name FROM users WHERE email = $1',
-      [email]
-    );
+    const emailLower = String(email).toLowerCase();
+    const user = await User.findOne({ email: emailLower });
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password',
+      });
     }
 
-    const user = result.rows[0];
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
 
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password',
+      });
     }
 
-    res.json({
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET is not set');
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+
+    const token = jwt.sign({ id: user._id }, jwtSecret, { expiresIn: '7d' });
+
+    return res.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+      data: {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+        },
       },
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ error: 'Server error during login' });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
   }
 });
 

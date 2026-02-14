@@ -1,10 +1,12 @@
 const express = require('express');
 const { query } = require('../config/db');
 
+const { protect } = require('../middleware/auth.middleware');
+
 const router = express.Router();
 
 // GET /api/fees/search?name=StudentName - Search student by name for fee info
-router.get('/search', async (req, res) => {
+router.get('/search', protect, async (req, res) => {
   try {
     const { name } = req.query;
 
@@ -32,7 +34,7 @@ router.get('/search', async (req, res) => {
 });
 
 // GET /api/fees/:studentId - Get fee details for a student
-router.get('/:studentId', async (req, res) => {
+router.get('/:studentId', protect, async (req, res) => {
   try {
     const { studentId } = req.params;
 
@@ -56,7 +58,7 @@ router.get('/:studentId', async (req, res) => {
 });
 
 // PATCH /api/fees/:studentId - Update fees paid for a student
-router.patch('/:studentId', async (req, res) => {
+router.patch('/:studentId', protect, async (req, res) => {
   try {
     const { studentId } = req.params;
     const { fees_paid } = req.body;
