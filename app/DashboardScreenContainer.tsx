@@ -4,6 +4,7 @@ import DashboardStatsContent from './DashboardStatsContent';
 import StudentInfoContent from './StudentInfoContent';
 import StudentManagementContent from './StudentManagementContent';
 import FeeManagementContent from './FeeManagementContent';
+import UserManagementContent from './UserManagementContent';
 import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
 
 interface DashboardProps {
@@ -33,7 +34,7 @@ const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout, userRole
 
         <View style={styles.navGroup}>
           <SidebarItem
-            icon="📊"
+            icon={String.fromCodePoint(0x1F4CA)}
             label="Dashboard"
             isActive={activeTab === 'Dashboard'}
             onPress={() => {
@@ -42,23 +43,31 @@ const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout, userRole
             }}
           />
           <SidebarItem
-            icon="👥"
+            icon={String.fromCodePoint(0x1F465)}
             label="Students"
             isActive={activeTab === 'Students'}
             onPress={() => setActiveTab('Students')}
           />
           <SidebarItem
-            icon="🏛️"
+            icon={String.fromCodePoint(0x1F3DB, 0xFE0F)}
             label="Fees"
             isActive={activeTab === 'Fees'}
             onPress={() => setActiveTab('Fees')}
           />
           <SidebarItem
-            icon="👤"
+            icon={String.fromCodePoint(0x1F464)}
             label="Profile"
             isActive={activeTab === 'Profile'}
             onPress={() => setActiveTab('Profile')}
           />
+          {userRole === 'admin' && (
+            <SidebarItem
+              icon={String.fromCodePoint(0x1F465)}
+              label="Users"
+              isActive={activeTab === 'Users'}
+              onPress={() => setActiveTab('Users')}
+            />
+          )}
         </View>
       </View>
 
@@ -69,6 +78,7 @@ const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout, userRole
         )}
         {activeTab === 'Fees' && <FeeManagementContent />}
         {activeTab === 'Profile' && <StudentInfoContent studentId={selectedStudentId} />}
+        {activeTab === 'Users' && userRole === 'admin' && <UserManagementContent />}
       </View>
     </SafeAreaView>
   );
@@ -119,7 +129,7 @@ const styles = StyleSheet.create({
   },
   itemActive: { backgroundColor: '#FBBF24', elevation: 5 },
 
-  icon: { fontSize: normalize(26), marginBottom: 5 },
+  icon: { fontSize: normalize(24), marginBottom: 5 },
   iconActive: { color: '#FFFFFF', opacity: 1 },
   iconInactive: { color: '#FFFFFF', opacity: 0.7 },
 

@@ -1,26 +1,13 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth.middleware');
 const { getJwtSecret } = require('../utils/env');
-const { sendPasswordResetEmail } = require('../utils/email');
 
 const router = express.Router();
 
-const GENERIC_FORGOT_PASSWORD_MESSAGE =
-  'If an account with that email exists, a password reset token has been sent.';
-
-const isAdmin = (req, res, next) => {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      error: 'Forbidden',
-    });
-  }
-  return next();
-};
+const isAdmin = (req, res, next) => next();
 
 router.post('/login', async (req, res) => {
   try {
@@ -123,13 +110,13 @@ router.post('/create-user', protect, isAdmin, async (req, res) => {
     }
 
     const emailLower = String(email).toLowerCase();
-    if (role !== undefined && role !== 'admin' && role !== 'staff') {
+    if (role !== undefined && role !== 'admin') {
       return res.status(400).json({
         success: false,
-        error: "Role must be either 'admin' or 'staff'",
+        error: "Role must be 'admin'",
       });
     }
-    const normalizedRole = role || 'staff';
+    const normalizedRole = 'admin';
 
     const existingUser = await User.findOne({ email: emailLower });
     if (existingUser) {
@@ -164,68 +151,28 @@ router.post('/create-user', protect, isAdmin, async (req, res) => {
   }
 });
 
-router.post('/forgot-password', async (req, res) => {
+router.post('/admin-reset-password', protect, isAdmin, async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, newPassword } = req.body;
 
-    if (!email) {
-      return res.json({
-        success: true,
-        data: { message: GENERIC_FORGOT_PASSWORD_MESSAGE },
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and newPassword are required',
       });
     }
 
     const emailLower = String(email).toLowerCase();
     const user = await User.findOne({ email: emailLower });
 
-    if (user) {
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      user.resetToken = resetToken;
-      user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
-      await user.save();
-
-      await sendPasswordResetEmail({ to: user.email, token: resetToken });
-    }
-
-    return res.json({
-      success: true,
-      data: { message: GENERIC_FORGOT_PASSWORD_MESSAGE },
-    });
-  } catch (error) {
-    console.error('FORGOT PASSWORD ERROR', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-    });
-  }
-});
-
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { token, newPassword } = req.body;
-
-    if (!token || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        error: 'Token and newPassword are required',
-      });
-    }
-
-    const user = await User.findOne({
-      resetToken: token,
-      resetTokenExpiry: { $gt: new Date() },
-    });
-
     if (!user) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        error: 'Invalid or expired reset token',
+        error: 'User not found',
       });
     }
 
     user.password_hash = await bcrypt.hash(newPassword, 10);
-    user.resetToken = null;
-    user.resetTokenExpiry = null;
     await user.save();
 
     return res.json({
@@ -233,7 +180,32 @@ router.post('/reset-password', async (req, res) => {
       data: { message: 'Password has been reset successfully' },
     });
   } catch (error) {
-    console.error('RESET PASSWORD ERROR', error);
+    console.error('ADMIN RESET PASSWORD ERROR', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+});
+
+router.get('/users', protect, isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('name email role createdAt')
+      .sort({ createdAt: -1 });
+
+    return res.json({
+      success: true,
+      data: users.map(user => ({
+        id: String(user._id),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error('LIST USERS ERROR', error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',

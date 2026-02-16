@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../constants/api';
 const REQUEST_TIMEOUT_MS = 60000;
 const TOKEN_KEY = 'userToken';
 const ROLE_KEY = 'userRole';
+const REMEMBER_KEY = 'rememberMe';
 let cachedToken: string | null = null;
 let unauthorizedHandler: (() => void) | null = null;
 let sessionAuthed = false;
@@ -43,6 +44,16 @@ export const isAuthErrorMessage = (message: string | null | undefined) => {
 };
 
 export const hydrateSession = async () => {
+  const remember = await SecureStore.getItemAsync(REMEMBER_KEY);
+  if (remember !== 'true') {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(ROLE_KEY);
+    cachedToken = null;
+    sessionAuthed = false;
+    sessionRole = null;
+    return { token: null, role: null, authed: false };
+  }
+
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
   const roleRaw = await SecureStore.getItemAsync(ROLE_KEY);
   const role = isUserRole(roleRaw) ? roleRaw : null;
@@ -57,6 +68,7 @@ export const hydrateSession = async () => {
 export const persistSession = async (token: string, role: UserRole) => {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
   await SecureStore.setItemAsync(ROLE_KEY, role);
+  await SecureStore.setItemAsync(REMEMBER_KEY, 'true');
   cachedToken = token;
   sessionAuthed = true;
   sessionRole = role;
@@ -84,14 +96,6 @@ type DashboardStats = {
   totalFeesCollected: number;
   monthFeesCollected: number;
 };
-
-type ForgotPasswordData = {
-  message: string;
-};
-
-type ResetPasswordData = {
-  message: string;
-};
 type StudentInput = {
   name: string;
   grade?: string;
@@ -102,6 +106,30 @@ type StudentInput = {
   teacher?: string;
 };
 
+type CreateUserInput = {
+  name: string;
+  email: string;
+  password: string;
+  role?: UserRole;
+};
+
+type CreateUserResult = {
+  id: string;
+  email: string;
+  role: UserRole;
+};
+
+type AdminResetPasswordResult = {
+  message: string;
+};
+
+type UserSummary = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+};
 type DeleteResult = {
   success?: boolean;
   message?: string;
@@ -182,18 +210,6 @@ const parseDashboardStats = (value: unknown): DashboardStats | null => {
   };
 };
 
-const parseForgotPasswordData = (value: unknown): ForgotPasswordData | null => {
-  if (!isRecord(value)) return null;
-  if (!isString(value.message)) return null;
-  return { message: value.message };
-};
-
-const parseResetPasswordData = (value: unknown): ResetPasswordData | null => {
-  if (!isRecord(value)) return null;
-  if (!isString(value.message)) return null;
-  return { message: value.message };
-};
-
 const parseStudent = (value: unknown): Student | null => {
   if (!isRecord(value)) return null;
   const id = toStringId(value._id ?? value.id);
@@ -246,6 +262,36 @@ const parseDeleteResult = (value: unknown): DeleteResult | null => {
   return { success: value.success, message: value.message };
 };
 
+const parseCreateUserResult = (value: unknown): CreateUserResult | null => {
+  if (!isRecord(value)) return null;
+  if (!isString(value.id)) return null;
+  if (!isString(value.email)) return null;
+  const role = isUserRole(value.role) ? value.role : null;
+  if (!role) return null;
+  return { id: value.id, email: value.email, role };
+};
+
+const parseAdminResetPasswordResult = (value: unknown): AdminResetPasswordResult | null => {
+  if (!isRecord(value)) return null;
+  if (!isString(value.message)) return null;
+  return { message: value.message };
+};
+
+const parseUserSummaryArray = (value: unknown): UserSummary[] | null => {
+  if (!Array.isArray(value)) return null;
+  const parsed: UserSummary[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) return null;
+    if (!isString(item.id)) return null;
+    if (!isString(item.name)) return null;
+    if (!isString(item.email)) return null;
+    const role = isUserRole(item.role) ? item.role : null;
+    if (!role) return null;
+    const createdAt = isString(item.createdAt) ? item.createdAt : '';
+    parsed.push({ id: item.id, name: item.name, email: item.email, role, createdAt });
+  }
+  return parsed;
+};
 const parseFeePayment = (value: unknown): FeePayment | null => {
   if (!isRecord(value)) return null;
   const id = toStringId(value._id);
@@ -403,22 +449,6 @@ export const api = {
     return mapResponse<LoginData>(res, parseLoginData);
   },
 
-  forgotPassword: async (email: string) => {
-    const res = await apiRequest('/api/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-    return mapResponse<ForgotPasswordData>(res, parseForgotPasswordData);
-  },
-
-  resetPassword: async (token: string, newPassword: string) => {
-    const res = await apiRequest('/api/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
-    });
-    return mapResponse<ResetPasswordData>(res, parseResetPasswordData);
-  },
-
   getDashboardStats: async () => {
     const res = await apiRequest('/api/dashboard/stats');
     return mapResponse<DashboardStats>(res, parseDashboardStats);
@@ -466,11 +496,33 @@ export const api = {
     });
     return mapResponse<FeePayment>(res, parseFeePayment);
   },
+
+  createUser: async (data: CreateUserInput) => {
+    const res = await apiRequest('/api/auth/create-user', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return mapResponse<CreateUserResult>(res, parseCreateUserResult);
+  },
+
+  adminResetPassword: async (email: string, newPassword: string) => {
+    const res = await apiRequest('/api/auth/admin-reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, newPassword }),
+    });
+    return mapResponse<AdminResetPasswordResult>(res, parseAdminResetPasswordResult);
+  },
+
+  getUsers: async () => {
+    const res = await apiRequest('/api/auth/users');
+    return mapResponse<UserSummary[]>(res, parseUserSummaryArray);
+  },
 };
 
 export const clearAuthToken = async () => {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
   await SecureStore.deleteItemAsync(ROLE_KEY);
+  await SecureStore.deleteItemAsync(REMEMBER_KEY);
   cachedToken = null;
   sessionAuthed = false;
   sessionRole = null;
@@ -479,4 +531,12 @@ export const clearAuthToken = async () => {
 export const setAuthToken = (token: string | null) => {
   cachedToken = token;
   sessionAuthed = Boolean(token);
+};
+
+export const setRememberPreference = async (remember: boolean) => {
+  if (remember) {
+    await SecureStore.setItemAsync(REMEMBER_KEY, 'true');
+  } else {
+    await SecureStore.deleteItemAsync(REMEMBER_KEY);
+  }
 };

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useRouter } from 'expo-router';
 import {
   Alert,
   Image,
@@ -12,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { api, persistSession } from '../lib/api';
+import { api, clearAuthToken, persistSession, setAuthToken, setRememberPreference, setSessionRole } from '../lib/api';
 import { horizontalScale, normalize, verticalScale } from '../utils/responsive';
 
 interface LoginScreenProps {
@@ -20,11 +19,11 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -34,7 +33,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       const role = response.data?.user.role;
 
       if (response.success && token && role) {
-        await persistSession(token, role);
+        if (rememberMe) {
+          await persistSession(token, role);
+        } else {
+          await clearAuthToken();
+          await setRememberPreference(false);
+          setAuthToken(token);
+          setSessionRole(role);
+        }
         onLogin();
       } else {
         Alert.alert(
@@ -52,31 +58,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     }
   };
 
-  const handleForgotPassword = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      Alert.alert('Enter Email', 'Please enter your email first, then tap Forgot password.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await api.forgotPassword(normalizedEmail);
-      if (response.success) {
-        Alert.alert(
-          'Reset Requested',
-          response.data?.message ?? 'If your account exists, a reset token has been sent.'
-        );
-        router.push({ pathname: '/reset-password', params: { email: normalizedEmail } });
-      } else {
-        Alert.alert('Request Failed', response.error || 'Could not process forgot password request.');
-      }
-    } catch {
-      Alert.alert('Network Error', 'Could not connect to the server. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Forgot password removed for now.
 
   return (
     <SafeAreaView style={styles.container}>
@@ -139,10 +121,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
-              <Text style={styles.forgotText}>Forgotten your password?</Text>
+            <TouchableOpacity
+              style={styles.rememberRow}
+              onPress={() => setRememberMe(value => !value)}
+              disabled={loading}
+            >
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe ? <Text style={styles.checkboxTick}>✓</Text> : null}
+              </View>
+              <Text style={styles.rememberText}>Remember me</Text>
             </TouchableOpacity>
-
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -232,11 +220,35 @@ const styles = StyleSheet.create({
     fontSize: normalize(18),
     fontWeight: 'bold',
   },
-  forgotText: {
-    color: '#F59E0B',
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: verticalScale(10),
+  },
+  checkbox: {
+    width: horizontalScale(18),
+    height: horizontalScale(18),
+    borderWidth: 2,
+    borderColor: '#2563EB',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: horizontalScale(10),
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxChecked: {
+    backgroundColor: '#2563EB',
+  },
+  checkboxTick: {
+    color: '#FFFFFF',
+    fontSize: normalize(12),
+    fontWeight: '700',
+  },
+  rememberText: {
+    color: '#111827',
     fontSize: normalize(14),
     fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 });
 
