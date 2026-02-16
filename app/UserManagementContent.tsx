@@ -20,6 +20,7 @@ const UserManagementContent = () => {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const hiddenEmail = 'surendrakumars7401@gmail.com';
 
   const handleCreateUser = async () => {
@@ -54,21 +55,56 @@ const UserManagementContent = () => {
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
+    setLoadError(null);
     try {
       const response = await api.getUsers();
       if (response.success) {
         const list = (response.data ?? [])
           .filter(item => item.email.toLowerCase() !== hiddenEmail)
-          .map(item => ({ id: item.id, name: item.name, email: item.email }));
+          .map(item => ({
+            id: item.id,
+            name: item.name || item.email,
+            email: item.email,
+          }));
         setUsers(list);
       } else {
-        Alert.alert('Load Failed', response.error || 'Could not load users.');
+        const err = response.error || 'Could not load users.';
+        setLoadError(err);
+        Alert.alert('Load Failed', err);
       }
     } catch {
-      Alert.alert('Network Error', 'Could not connect to the server. Please try again.');
+      const err = 'Could not connect to the server. Please try again.';
+      setLoadError(err);
+      Alert.alert('Network Error', err);
     } finally {
       setLoadingUsers(false);
     }
+  };
+
+  const handleDeleteUser = async (id: string, emailValue: string) => {
+    Alert.alert('Delete User', `Delete ${emailValue}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            const response = await api.deleteUser(id);
+            if (response.success) {
+              Alert.alert('Deleted', 'User deleted successfully.');
+              fetchUsers();
+            } else {
+              Alert.alert('Delete Failed', response.error || 'Could not delete user.');
+            }
+          } catch {
+            Alert.alert('Network Error', 'Could not connect to the server. Please try again.');
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
   };
 
   const handleAdminReset = async () => {
@@ -105,24 +141,46 @@ const UserManagementContent = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Users</Text>
-      <Text style={styles.subtitle}>All existing accounts (hidden: {hiddenEmail}).</Text>
+      <Text style={styles.helperText}>
+        {loadingUsers ? 'Loading users...' : `Users loaded: ${users.length}`}
+        {loadError ? ` • Error: ${loadError}` : ''}
+      </Text>
+      {users.length > 0 && (
+        <Text style={styles.helperText}>
+          Preview: {users.slice(0, 2).map(item => item.name || item.email).join(', ')}
+        </Text>
+      )}
       <FlatList
         data={users}
         keyExtractor={(item) => item.id}
-        refreshing={loadingUsers}
-        onRefresh={fetchUsers}
+        style={styles.userList}
+        contentContainerStyle={users.length === 0 ? styles.emptyContainer : styles.listContent}
         renderItem={({ item }) => (
           <View style={styles.userRow}>
-            <Text style={styles.userName}>{item.name}</Text>
-            <Text style={styles.userEmail}>{item.email}</Text>
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{item.name || 'Unknown User'}</Text>
+              <Text style={styles.userEmail}>{item.email || 'Unknown Email'}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteUser(item.id, item.email)}
+              disabled={loading}
+            >
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
           </View>
         )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>
-            {loadingUsers ? 'Loading users...' : 'No users available.'}
+            {loadingUsers
+              ? 'Loading users...'
+              : loadError
+                ? `Failed to load users: ${loadError}`
+                : 'No users available.'}
           </Text>
         }
-        style={styles.userList}
+        refreshing={loadingUsers}
+        onRefresh={fetchUsers}
       />
 
       <View style={styles.sectionDivider} />
@@ -228,17 +286,35 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(20),
   },
   userList: {
-    maxHeight: verticalScale(220),
+    maxHeight: verticalScale(260),
+    minHeight: verticalScale(120),
     marginBottom: verticalScale(10),
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: horizontalScale(8),
+    paddingTop: verticalScale(8),
+  },
+  listContent: {
+    paddingBottom: verticalScale(8),
+  },
+  emptyContainer: {
+    paddingVertical: verticalScale(20),
   },
   userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: verticalScale(8),
     paddingHorizontal: horizontalScale(12),
     borderRadius: 10,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     marginBottom: verticalScale(8),
+  },
+  userInfo: {
+    flex: 1,
+    marginRight: horizontalScale(10),
   },
   userName: {
     fontSize: normalize(14),
@@ -249,10 +325,26 @@ const styles = StyleSheet.create({
     fontSize: normalize(12),
     color: '#6B7280',
   },
+  deleteButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: horizontalScale(12),
+    paddingVertical: verticalScale(8),
+    borderRadius: 8,
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: normalize(12),
+    fontWeight: '700',
+  },
   emptyText: {
     fontSize: normalize(12),
     color: '#6B7280',
     textAlign: 'center',
+    marginBottom: verticalScale(10),
+  },
+  helperText: {
+    fontSize: normalize(12),
+    color: '#6B7280',
     marginBottom: verticalScale(10),
   },
   inputGroup: {

@@ -281,14 +281,14 @@ const parseUserSummaryArray = (value: unknown): UserSummary[] | null => {
   if (!Array.isArray(value)) return null;
   const parsed: UserSummary[] = [];
   for (const item of value) {
-    if (!isRecord(item)) return null;
-    if (!isString(item.id)) return null;
-    if (!isString(item.name)) return null;
-    if (!isString(item.email)) return null;
-    const role = isUserRole(item.role) ? item.role : null;
-    if (!role) return null;
+    if (!isRecord(item)) continue;
+    const id = isString(item.id) ? item.id : isString(item._id) ? item._id : null;
+    if (!id) continue;
+    if (!isString(item.email)) continue;
+    const role = isUserRole(item.role) ? item.role : 'admin';
+    const name = isString(item.name) && item.name.trim().length > 0 ? item.name : item.email;
     const createdAt = isString(item.createdAt) ? item.createdAt : '';
-    parsed.push({ id: item.id, name: item.name, email: item.email, role, createdAt });
+    parsed.push({ id, name, email: item.email, role, createdAt });
   }
   return parsed;
 };
@@ -516,6 +516,15 @@ export const api = {
   getUsers: async () => {
     const res = await apiRequest('/api/auth/users');
     return mapResponse<UserSummary[]>(res, parseUserSummaryArray);
+  },
+
+  deleteUser: async (id: string) => {
+    const res = await apiRequest(`/api/auth/users/${id}`, { method: 'DELETE' });
+    if (!res.success) {
+      return { success: false, data: null, error: res.error };
+    }
+    const parsed = parseDeleteResult(res.data);
+    return { success: true, data: parsed, error: null };
   },
 };
 

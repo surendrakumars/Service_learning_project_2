@@ -213,4 +213,38 @@ router.get('/users', protect, isAdmin, async (req, res) => {
   }
 });
 
+router.delete('/users/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id).select('email');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    if (user.email?.toLowerCase() === 'surendrakumars7401@gmail.com') {
+      return res.status(403).json({
+        success: false,
+        error: 'Cannot delete this account',
+      });
+    }
+
+    await User.deleteOne({ _id: id });
+
+    return res.json({
+      success: true,
+      data: { message: 'User deleted successfully' },
+    });
+  } catch (error) {
+    console.error('DELETE USER ERROR', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+});
+
 module.exports = router;
