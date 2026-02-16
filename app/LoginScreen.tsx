@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -18,6 +20,7 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
+  const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,10 +63,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     try {
       const response = await api.forgotPassword(normalizedEmail);
       if (response.success) {
-        Alert.alert(
-          'Reset Requested',
-          'If your account exists, a password reset request has been created.'
-        );
+        const message = response.data?.message ?? 'If your account exists, a password reset request has been created.';
+        const tokenFromServer = response.data?.token;
+        if (tokenFromServer) {
+          Alert.alert('Reset Token', `${message}\n\nToken: ${tokenFromServer}`);
+        } else {
+          Alert.alert('Reset Requested', message);
+        }
+        router.push({ pathname: '/reset-password', params: { email: normalizedEmail } });
       } else {
         Alert.alert('Request Failed', response.error || 'Could not process forgot password request.');
       }
@@ -81,6 +88,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
         style={{ flex: 1, width: '100%' }}
       >
         <View style={styles.contentWrapper}>
+          <Image source={require('../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
           <Text style={styles.headerTitle}>Cambridge Little Kids</Text>
 
           <View style={styles.formContainer}>
@@ -156,8 +164,13 @@ const styles = StyleSheet.create({
     fontSize: normalize(18),
     fontWeight: '700',
     color: '#2563EB',
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(60),
+    marginTop: verticalScale(6),
+    marginBottom: verticalScale(28),
+  },
+  logoImage: {
+    width: horizontalScale(170),
+    height: horizontalScale(170),
+    marginTop: verticalScale(8),
   },
   formContainer: { width: '100%', alignItems: 'center' },
   heading: {

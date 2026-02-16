@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth.middleware');
+const { getJwtSecret } = require('../utils/env');
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.post('/login', async (req, res) => {
     let user = await User.findOne({ email: emailLower });
 
     if (!user) {
-      if (emailLower === 'admin@cambridgekids.com' && password === 'admin123') {
+      if (emailLower === 'surendrakumars7401@gmail.com' && password === 'admin123') {
         const password_hash = await bcrypt.hash(password, 10);
         user = await User.create({
           name: 'Admin User',
@@ -51,7 +52,7 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    if (emailLower === 'admin@cambridgekids.com' && password === 'admin123') {
+    if (emailLower === 'surendrakumars7401@gmail.com' && password === 'admin123') {
       const password_hash = await bcrypt.hash(password, 10);
       user.password_hash = password_hash;
       await user.save();
@@ -74,9 +75,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = getJwtSecret();
     if (!jwtSecret) {
-      console.error('JWT_SECRET is not set');
+      console.error('JWT secret is not set. Configure JWT_SECRET or JWT_SECRET_KEY.');
       return res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -176,8 +177,9 @@ router.post('/forgot-password', async (req, res) => {
     const emailLower = String(email).toLowerCase();
     const user = await User.findOne({ email: emailLower });
 
+    let resetToken = null;
     if (user) {
-      const resetToken = crypto.randomBytes(32).toString('hex');
+      resetToken = crypto.randomBytes(32).toString('hex');
       user.resetToken = resetToken;
       user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
       await user.save();
@@ -187,7 +189,10 @@ router.post('/forgot-password', async (req, res) => {
 
     return res.json({
       success: true,
-      data: { message: GENERIC_FORGOT_PASSWORD_MESSAGE },
+      data: {
+        message: GENERIC_FORGOT_PASSWORD_MESSAGE,
+        ...(process.env.RETURN_RESET_TOKEN === 'true' && resetToken ? { token: resetToken } : {}),
+      },
     });
   } catch (error) {
     console.error('FORGOT PASSWORD ERROR', error);

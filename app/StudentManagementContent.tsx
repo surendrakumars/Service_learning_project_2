@@ -3,7 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   ImageBackground,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   TextInput,
@@ -451,27 +451,33 @@ const StudentManagementContent: React.FC<StudentManagementContentProps> = ({ onS
 
   return (
     <ImageBackground source={require('./assets/student_bg.png')} style={styles.bg} resizeMode="cover">
-      <ScrollView
+      <FlatList
+        data={getListData()}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => (
+          <View style={styles.studentCardWrapper}>
+            <StudentCard
+              student={item}
+              onPress={() => {
+                handleStudentTap(item);
+              }}
+              isSelected={selectedStudent?._id === item._id}
+            />
+          </View>
+        )}
+        ListHeaderComponent={(
+          <View>
+            {renderHeader()}
+          </View>
+        )}
+        ListFooterComponent={renderFooter()}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-      >
-        {renderHeader()}
-        <View style={styles.studentList}>
-          {getListData().map((item) => (
-            <View key={item._id} style={styles.studentCardWrapper}>
-              <StudentCard
-                student={item}
-                onPress={() => {
-                  handleStudentTap(item);
-                }}
-                isSelected={selectedStudent?._id === item._id}
-              />
-            </View>
-          ))}
-        </View>
-        {renderFooter()}
-      </ScrollView>
+        initialNumToRender={10}
+        windowSize={7}
+        removeClippedSubviews
+      />
     </ImageBackground>
   );
 };

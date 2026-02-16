@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { horizontalScale, verticalScale, normalize } from './ResponsiveUtils';
 
 interface SignOutScreenProps {
@@ -10,8 +10,7 @@ const SignOutScreen: React.FC<SignOutScreenProps> = ({ onSignOut }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        
-        {/* Title */}
+        <Image source={require('../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
         <Text style={styles.title}>Cambridge Little Kids</Text>
 
         {/* Sign Out Button */}
@@ -42,10 +41,13 @@ const styles = StyleSheet.create({
     fontSize: normalize(22),
     fontWeight: 'bold',
     color: '#2563EB',
-    marginBottom: verticalScale(60),
+    marginBottom: verticalScale(40),
     textAlign: 'center',
-    position: 'absolute',
-    top: verticalScale(200), // Positioned similarly to the image
+  },
+  logoImage: {
+    width: horizontalScale(180),
+    height: horizontalScale(180),
+    marginBottom: verticalScale(24),
   },
   button: {
     backgroundColor: '#2563EB',

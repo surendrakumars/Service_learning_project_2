@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import DashboardStatsContent from './DashboardStatsContent';
-import FeeManagementContent from './FeeManagementContent';
-import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
 import StudentInfoContent from './StudentInfoContent';
 import StudentManagementContent from './StudentManagementContent';
+import FeeManagementContent from './FeeManagementContent';
+import { horizontalScale, normalize, verticalScale } from './ResponsiveUtils';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -18,42 +18,57 @@ const DashboardScreenContainer: React.FC<DashboardProps> = ({ onLogout, userRole
 
   const handleSelectStudent = (studentId: string) => {
     setSelectedStudentId(studentId);
-    setActiveTab('Profile'); // Switch to Profile tab when a student is selected
-  }; 
+    setActiveTab('Profile');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
-      
-      {/* SIDEBAR */}
+
       <View style={styles.sidebar}>
-        
-        {/* LOGO AREA (Click to Logout) */}
         <TouchableOpacity style={styles.logoContainer} onPress={onLogout}>
-          <View style={styles.logoOuter}>
-            <View style={styles.logoInner} />
-          </View>
-          {/* Added "Admin" Text Here */}
+          <Image source={require('../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
           <Text style={styles.adminLabel}>{userRole === 'admin' ? 'Admin' : 'Staff'}</Text>
         </TouchableOpacity>
 
-        {/* NAVIGATION ITEMS */}
         <View style={styles.navGroup}>
-          <SidebarItem icon="📊" label="Dashboard" isActive={activeTab === 'Dashboard'} onPress={() => { setActiveTab('Dashboard'); setRefreshTrigger(prev => prev + 1); }} />
-          <SidebarItem icon="👥" label="Students" isActive={activeTab === 'Students'} onPress={() => setActiveTab('Students')} />
-          <SidebarItem icon="🏛️" label="Fees" isActive={activeTab === 'Fees'} onPress={() => setActiveTab('Fees')} />
-          <SidebarItem icon="👤" label="Profile" isActive={activeTab === 'Profile'} onPress={() => setActiveTab('Profile')} />
+          <SidebarItem
+            icon="📊"
+            label="Dashboard"
+            isActive={activeTab === 'Dashboard'}
+            onPress={() => {
+              setActiveTab('Dashboard');
+              setRefreshTrigger(prev => prev + 1);
+            }}
+          />
+          <SidebarItem
+            icon="👥"
+            label="Students"
+            isActive={activeTab === 'Students'}
+            onPress={() => setActiveTab('Students')}
+          />
+          <SidebarItem
+            icon="🏛️"
+            label="Fees"
+            isActive={activeTab === 'Fees'}
+            onPress={() => setActiveTab('Fees')}
+          />
+          <SidebarItem
+            icon="👤"
+            label="Profile"
+            isActive={activeTab === 'Profile'}
+            onPress={() => setActiveTab('Profile')}
+          />
         </View>
       </View>
 
-      {/* MAIN CONTENT AREA */}
       <View style={styles.contentArea}>
-        <View style={styles.tabContent}>
-          {activeTab === 'Dashboard' && <DashboardStatsContent refreshTrigger={refreshTrigger} />}
-          {activeTab === 'Students' && <StudentManagementContent onSelectStudent={handleSelectStudent} userRole={userRole} />}
-          {activeTab === 'Fees' && <FeeManagementContent />}
-          {activeTab === 'Profile' && <StudentInfoContent studentId={selectedStudentId} />}
-        </View>
+        {activeTab === 'Dashboard' && <DashboardStatsContent refreshTrigger={refreshTrigger} />}
+        {activeTab === 'Students' && (
+          <StudentManagementContent onSelectStudent={handleSelectStudent} userRole={userRole} />
+        )}
+        {activeTab === 'Fees' && <FeeManagementContent />}
+        {activeTab === 'Profile' && <StudentInfoContent studentId={selectedStudentId} />}
       </View>
     </SafeAreaView>
   );
@@ -68,35 +83,46 @@ const SidebarItem = ({ icon, label, isActive, onPress }: any) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', backgroundColor: '#FFFFFF' },
-  contentArea: { flex: 1, backgroundColor: '#FFFFFF' },
-  tabContent: { flex: 1 }, 
-  
-  sidebar: { width: horizontalScale(90), backgroundColor: '#2563EB', alignItems: 'center', paddingVertical: verticalScale(40) },
-  
-  // Updated container to align text and circle
+  contentArea: { flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 0, paddingTop: 0 },
+
+  sidebar: {
+    width: horizontalScale(90),
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    paddingVertical: verticalScale(40),
+  },
+
   logoContainer: { marginBottom: verticalScale(40), alignItems: 'center' },
-  
-  logoOuter: { width: horizontalScale(50), height: horizontalScale(50), borderRadius: horizontalScale(25), backgroundColor: '#2DD4BF', justifyContent: 'center', alignItems: 'center' },
-  logoInner: { width: horizontalScale(28), height: horizontalScale(28), borderRadius: horizontalScale(14), backgroundColor: '#FBBF24' },
-  
-  // New Style for Admin Text
+  logoImage: {
+    width: horizontalScale(50),
+    height: horizontalScale(50),
+    borderRadius: horizontalScale(25),
+    backgroundColor: '#FFFFFF',
+  },
+
   adminLabel: {
     color: '#FFFFFF',
     fontSize: normalize(12),
     fontWeight: 'bold',
-    marginTop: verticalScale(5), // Space between circle and text
-    opacity: 0.9
+    marginTop: verticalScale(5),
+    opacity: 0.9,
   },
 
   navGroup: { gap: verticalScale(25), width: '100%', alignItems: 'center' },
-  
-  item: { alignItems: 'center', justifyContent: 'center', width: horizontalScale(70), paddingVertical: verticalScale(12), borderRadius: 18 },
+
+  item: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: horizontalScale(70),
+    paddingVertical: verticalScale(12),
+    borderRadius: 18,
+  },
   itemActive: { backgroundColor: '#FBBF24', elevation: 5 },
-  
+
   icon: { fontSize: normalize(26), marginBottom: 5 },
   iconActive: { color: '#FFFFFF', opacity: 1 },
   iconInactive: { color: '#FFFFFF', opacity: 0.7 },
-  
+
   label: { fontSize: normalize(11), color: '#FFFFFF', opacity: 0.8 },
   labelActive: { fontWeight: 'bold', opacity: 1 },
 });

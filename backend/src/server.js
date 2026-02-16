@@ -3,6 +3,7 @@ require('dotenv').config(); // simple, works locally and on Render
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const { getJwtSecret } = require('./utils/env');
 const authRoutes = require('./routes/auth.routes');
 const studentRoutes = require('./routes/student.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
@@ -10,6 +11,11 @@ const feeRoutes = require('./routes/fee.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const jwtSecret = getJwtSecret();
+if (!jwtSecret) {
+  console.error('Missing JWT secret. Set JWT_SECRET or JWT_SECRET_KEY in Render environment variables.');
+  process.exit(1);
+}
 
 // Middleware
 app.use(cors());

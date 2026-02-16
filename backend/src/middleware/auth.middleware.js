@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getJwtSecret } = require('../utils/env');
 
 const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -7,7 +8,7 @@ const protect = async (req, res, next) => {
     return res.status(401).json({ success: false, error: 'Not authorized, no token' });
   }
 
-  const jwtSecret = process.env.JWT_SECRET;
+  const jwtSecret = getJwtSecret();
   if (!jwtSecret) {
     return res.status(500).json({ success: false, error: 'Server misconfiguration' });
   }

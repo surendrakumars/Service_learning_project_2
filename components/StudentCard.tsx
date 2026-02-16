@@ -94,4 +94,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StudentCard;
+export default React.memo(StudentCard);

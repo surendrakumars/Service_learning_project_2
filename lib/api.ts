@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import type { Student } from '../components/StudentCard';
 import { API_BASE_URL } from '../constants/api';
 
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 60000;
 const TOKEN_KEY = 'userToken';
 const ROLE_KEY = 'userRole';
 let cachedToken: string | null = null;
@@ -83,6 +83,15 @@ type DashboardStats = {
   totalStudents: number;
   totalFeesCollected: number;
   monthFeesCollected: number;
+};
+
+type ForgotPasswordData = {
+  message: string;
+  token?: string | null;
+};
+
+type ResetPasswordData = {
+  message: string;
 };
 
 type StudentInput = {
@@ -173,6 +182,19 @@ const parseDashboardStats = (value: unknown): DashboardStats | null => {
     totalFeesCollected: value.totalFeesCollected,
     monthFeesCollected,
   };
+};
+
+const parseForgotPasswordData = (value: unknown): ForgotPasswordData | null => {
+  if (!isRecord(value)) return null;
+  if (!isString(value.message)) return null;
+  const token = isString(value.token) ? value.token : null;
+  return { message: value.message, token };
+};
+
+const parseResetPasswordData = (value: unknown): ResetPasswordData | null => {
+  if (!isRecord(value)) return null;
+  if (!isString(value.message)) return null;
+  return { message: value.message };
 };
 
 const parseStudent = (value: unknown): Student | null => {
@@ -385,10 +407,19 @@ export const api = {
   },
 
   forgotPassword: async (email: string) => {
-    return apiRequest('/api/auth/forgot-password', {
+    const res = await apiRequest('/api/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
+    return mapResponse<ForgotPasswordData>(res, parseForgotPasswordData);
+  },
+
+  resetPassword: async (token: string, newPassword: string) => {
+    const res = await apiRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+    return mapResponse<ResetPasswordData>(res, parseResetPasswordData);
   },
 
   getDashboardStats: async () => {
