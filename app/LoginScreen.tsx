@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useRouter } from 'expo-router';
 import {
   Alert,
   Image,
@@ -20,7 +19,6 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,34 +50,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     }
   };
 
-  const handleForgotPassword = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      Alert.alert('Enter Email', 'Please enter your email first, then tap Forgot password.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await api.forgotPassword(normalizedEmail);
-      if (response.success) {
-        const message = response.data?.message ?? 'If your account exists, a password reset request has been created.';
-        const tokenFromServer = response.data?.token;
-        if (tokenFromServer) {
-          Alert.alert('Reset Token', `${message}\n\nToken: ${tokenFromServer}`);
-        } else {
-          Alert.alert('Reset Requested', message);
-        }
-        router.push({ pathname: '/reset-password', params: { email: normalizedEmail } });
-      } else {
-        Alert.alert('Request Failed', response.error || 'Could not process forgot password request.');
-      }
-    } catch {
-      Alert.alert('Network Error', 'Could not connect to the server. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Forgot password removed for now.
 
   return (
     <SafeAreaView style={styles.container}>
@@ -142,9 +113,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
-              <Text style={styles.forgotText}>Forgotten your password?</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -233,12 +201,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: normalize(18),
     fontWeight: 'bold',
-  },
-  forgotText: {
-    color: '#F59E0B',
-    fontSize: normalize(14),
-    fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 });
 
