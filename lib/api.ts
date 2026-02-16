@@ -85,6 +85,13 @@ type DashboardStats = {
   monthFeesCollected: number;
 };
 
+type ForgotPasswordData = {
+  message: string;
+};
+
+type ResetPasswordData = {
+  message: string;
+};
 type StudentInput = {
   name: string;
   grade?: string;
@@ -173,6 +180,18 @@ const parseDashboardStats = (value: unknown): DashboardStats | null => {
     totalFeesCollected: value.totalFeesCollected,
     monthFeesCollected,
   };
+};
+
+const parseForgotPasswordData = (value: unknown): ForgotPasswordData | null => {
+  if (!isRecord(value)) return null;
+  if (!isString(value.message)) return null;
+  return { message: value.message };
+};
+
+const parseResetPasswordData = (value: unknown): ResetPasswordData | null => {
+  if (!isRecord(value)) return null;
+  if (!isString(value.message)) return null;
+  return { message: value.message };
 };
 
 const parseStudent = (value: unknown): Student | null => {
@@ -382,6 +401,22 @@ export const api = {
       body: JSON.stringify({ email, password }),
     });
     return mapResponse<LoginData>(res, parseLoginData);
+  },
+
+  forgotPassword: async (email: string) => {
+    const res = await apiRequest('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    return mapResponse<ForgotPasswordData>(res, parseForgotPasswordData);
+  },
+
+  resetPassword: async (token: string, newPassword: string) => {
+    const res = await apiRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+    return mapResponse<ResetPasswordData>(res, parseResetPasswordData);
   },
 
   getDashboardStats: async () => {

@@ -48,9 +48,10 @@ export default function RootLayout() {
     if (!authChecked) return;
     const inTabs = segments[0] === '(tabs)';
     const inLogin = segments[0] === 'login';
+    const inResetPassword = segments[0] === 'reset-password';
     if (isAuthed && !inTabs) {
       router.replace('/(tabs)');
-    } else if (!isAuthed && !inLogin) {
+    } else if (!isAuthed && !inLogin && !inResetPassword) {
       router.replace('/login');
     }
   }, [authChecked, isAuthed, segments, router]);
@@ -68,6 +69,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
