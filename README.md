@@ -1,6 +1,6 @@
 # Cambridge Little Kids 🎓
 
-A full-stack mobile application for managing students, fees, and school operations at **Cambridge Little Kids**. Built with React Native (Expo) for the frontend and Node.js/Express for the backend, with support for both MongoDB and PostgreSQL databases.
+A full-stack mobile application for managing students, fees, and school operations at **Cambridge Kids pre School**. Built with React Native (Expo) for the frontend and Node.js/Express for the backend, with support for both MongoDB and PostgreSQL databases.
 
 ---
 
